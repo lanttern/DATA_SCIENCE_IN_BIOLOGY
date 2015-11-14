@@ -1,0 +1,3 @@
+# Computational Methods for Sequencing Alignment and Genome Assembly
+
+The projects are applying algorithms and data structures knowledge for analyzing DNA sequencing data. Python is used to implement key algorithms and data structures and to analyze real genomes and DNA sequencing datasets.
