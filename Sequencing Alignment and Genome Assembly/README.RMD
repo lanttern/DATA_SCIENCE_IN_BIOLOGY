@@ -1,3 +1,33 @@
 # Computational Methods for Sequencing Alignment and Genome Assembly
 
 The projects are applying algorithms and data structures knowledge for analyzing DNA sequencing data. Python is used to implement key algorithms and data structures and to analyze real genomes and DNA sequencing datasets.
+
+### Project1 - Sequence Match and Identify pattern
+
+This project includes two classes: findPattern and checkQuality. The findPattern
+class finds the occurance and position of a given pattern in a given genomic 
+sequence. The checkQuality class exams quality of sequencing for each cycle
+
+[Source code](https://github.com/lanttern/DATA_SCIENCE_IN_BIOLOGY/blob/master/Sequencing%20Alignment%20and%20Genome%20Assembly/Projects/AlignmentV1-Sequence%20Match-Identify%20pattern/script/genomicAligmentV1.py)
+
+### Project2 - Naive Match-boyerMoore Algorithm, SubstringIndex and SubsequenceIndex
+
+This project includes findPatternV2 class. The findPatternV2
+class finds the occurance and position of a given pattern in a given genomic 
+sequence.
+
+[Source code](https://github.com/lanttern/DATA_SCIENCE_IN_BIOLOGY/blob/master/Sequencing%20Alignment%20and%20Genome%20Assembly/Projects/AlignmentV2-Naive%20Match-boyerMoore%20Algorithm-SubstringIndex%20and%20SubsequenceIndex/script/genomicAligmentV2.py)
+
+### Project3 - Dynamic Program Algorithm-Local Alignment and Gobal Alignment, and Overlap Graph
+
+This project includes findPatternV3 class. The findPatternV3
+class finds the edit distance of a given pattern in a given genomic 
+sequence and constructs overlap graphs.
+
+[Source code](https://github.com/lanttern/DATA_SCIENCE_IN_BIOLOGY/blob/master/Sequencing%20Alignment%20and%20Genome%20Assembly/Projects/AlignmentV3_Dynamic%20Program%20Algorithm-Local%20Alignment%20and%20Gobal%20Alignment-Overlap%20Graph/script/genomicAlignmentV3.py)
+
+### Project4 - De novo Assembly-Greedy Algorithm and De_bruijn Graph
+
+This project uses denovo assambly and greedy algorithm to assembly genomic sequence from sequencing reads.
+
+[Source code](https://github.com/lanttern/DATA_SCIENCE_IN_BIOLOGY/blob/master/Sequencing%20Alignment%20and%20Genome%20Assembly/Projects/Assembly-De%20novo%20Assembly-Greedy%20Algorithm-De_bruijn%20Graph/genomeAssembly.py)
