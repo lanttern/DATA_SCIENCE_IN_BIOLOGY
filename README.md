@@ -21,4 +21,4 @@ This project apply bowtie2, samtools, bedtools and bcftools to: 1) Analyze RNA-s
 
 Python is used to implement key algorithms and data structures to analyze real genomes and DNA sequencing datasets.
 
-#### 5. R and Bioconductor (In progroess)
+#### 5. [R and Bioconductor] (https://github.com/lanttern/DATA_SCIENCE_IN_BIOLOGY/tree/master/Bioconductor%20for%20Genomic%20Analysis%20)
