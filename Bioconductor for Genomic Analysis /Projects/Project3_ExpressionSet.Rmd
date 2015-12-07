@@ -1,0 +1,145 @@
+---
+title: "Project3_ExpressionSet"
+author: "ZX"
+date: "November 20, 2015"
+output: html_document
+---
+# load packages
+
+```{r}
+library(Biobase)
+library(ALL)
+library(hgu95av2.db)
+```
+
+# Q1: What is the mean expression across all features for sample 5 in the ALL dataset (from the ALL package)?
+
+```{r}
+data(ALL)
+# get sample 5
+sample5 <- ALL[,5] 
+# mean expression value in sample5
+mean(exprs(sample5))
+```
+
+# Question2: Using this version of Ensembl, annotate each feature of the ALL dataset with the Ensembl gene id. How many probesets (features) are annotated with more than one Ensembl gene id?
+
+```{r}
+library(biomaRt)
+library(dplyr)
+#connect to ensembl host
+mart <- useMart(host='feb2014.archive.ensembl.org', biomart = "ENSEMBL_MART_ENSEMBL")
+ensembl <- useDataset("hsapiens_gene_ensembl", mart)
+#get feature names
+names <- featureNames(ALL)
+#find affymatrix attributes
+attrs <- listAttributes(ensembl, page = "feature_page")
+# return results
+result <- getBM(attributes = c("affy_hg_u95av2", "ensembl_gene_id", "chromosome_name"),
+                      filters = "affy_hg_u95av2", values = names, mart = ensembl)
+head(result)
+# group result by affy_hg_u95av2
+prob_set <- result %>%
+  group_by (affy_hg_u95av2) %>%
+  summarise(
+    prob_count = n()
+  )
+sum(prob_set$prob_count > 1)
+```
+
+#Question3: How many probesets (Affymetrix IDs) are annotated with one or more genes on the autosomes (chromosomes 1 to 22).
+
+```{r}
+result_autosome <- subset(result, chromosome_name < 23)
+prob_set_autosome <- result_autosome %>%
+  group_by (affy_hg_u95av2) %>%
+  summarise(
+    prob_count = n()
+  )
+tail(result_autosome)
+sum(prob_set_autosome$prob_count > 0)
+```
+
+#Question4: What is the mean value of the Methylation channel across the features for sample “5723646052_R04C01”?
+
+```{r}
+library(minfiData)
+data(MsetEx)
+pData(MsetEx)  # 5723646052_R04C01
+sample_2 <- MsetEx[,2]  #returning a MethylSet for sample #2
+mean(getMeth(sample_2)) 
+```
+
+#Question5: Access the processed data from NCBI GEO Accession number GSE788. What is the mean expression level of sample GSM9024?
+
+```{r}
+library(GEOquery)
+query <- getGEO("GSE788")
+data<- query[[1]]
+pData(data)
+GSM9024 <- data[,2]
+mean(exprs(GSM9024))
+```
+
+#Question6: What is the average of the average length across the samples in the expriment?
+
+```{r}
+library(airway)
+data(airway)
+mean(airway$avgLength)
+```
+
+#Question7: What is the number of Ensembl genes which have a count of 1 read or more in sample SRR1039512?
+
+```{r}
+SRR1039512 <- airway[,3]
+counts <- assay(SRR1039512, "counts")
+sum(counts>=1)
+```
+
+#Question8: The airway dataset contains more than 64k features. How many of these features overlaps with transcripts on the autosomes (chromosomes 1-22) as represented by the TxDb.Hsapiens.UCSC.hg19.knownGene package?
+
+```{r}
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+exons <- exons(txdb)
+autosome <- paste0("chr", c(1:22))
+df <- data.frame(seqnames = autosome)
+exons <- keepSeqlevels(exons, autosome)
+ncbiStyleLevels <- mapSeqlevels(seqlevels(exons),"NCBI")
+exons <- renameSeqlevels(exons, ncbiStyleLevels)
+subset <- subsetByOverlaps(airway, exons) 
+subset
+```
+
+#Question9: For sample SRR1039508, how big a percentage (expressed as a number between 0 and 1) of the total reads in the airway dataset for that sample, are part of a feature which overlaps an autosomal TxDb.Hsapiens.UCSC.hg19.knownGene transcript?
+
+```{r}
+SRR1039508 <- airway[,1]
+subset_SRR1039508 <-subsetByOverlaps(SRR1039508, exons)
+counts <- assay(SRR1039508, "counts")
+subset_counts <- assay(subset_SRR1039508, "counts")
+sum(subset_counts)/sum(counts)
+```
+
+#Question10: What is the median number of counts per feature (for sample SRR1039508) containing a H3K4me narrowPeak in their promoter (only features which overlap autosomal transcripts from TxDb.Hsapiens.UCSC.hg19.knownGene are considered)?
+
+```{r}
+library(AnnotationHub)
+ah <- AnnotationHub()
+# qah_h1 <- query(ah, c("E096", "H3K4me3"))
+h1 <- qah_h1[["AH30596"]] # AH30596 | E096-H3K4me3.narrowPeak.gz 
+h1 <- keepSeqlevels(h1, autosome)
+h1 <- renameSeqlevels(h1, ncbiStyleLevels)
+
+t <- range(rowRanges(subset_SRR1039508))
+auto_ncbi <- extractSeqlevelsByGroup(species="Homo sapiens", style="NCBI", group="auto")
+t <- keepSeqlevels(t, auto_ncbi)
+p <- promoters(t)
+
+ov <- subsetByOverlaps(p, h1)
+t2 <- subsetByOverlaps(SRR1039508, ov)
+counts <- assay(t2, "counts")
+median(counts)
+
+```

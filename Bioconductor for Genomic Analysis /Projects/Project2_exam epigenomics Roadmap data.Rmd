@@ -1,0 +1,174 @@
+---
+title: "Project2_exam epigenomics Roadmap data"
+author: "ZX"
+date: "November 11, 2015"
+output: html_document
+---
+
+In this assessment we will again examine Epigenomics Roadmap data on the human H1 stem cell line; the Roadmap id number is “E003”. We will use data on build “hg19” of the human genome, and for peaks we will use the “narrowPeak” quantification. To make the code easier to run, in several questions we will restrict our analysis to chromosome 22 so as to not exhaust our computational resources. Otherwise results are to be reported on the standard human autosomes (chromosomes 1 to 22).
+
+# load library
+
+```{r}
+library(AnnotationHub)
+library(Biostrings)
+library(BSgenome)
+library(GenomicRanges)
+library(GenomicFeatures)
+library(rtracklayer)
+library(Rsamtools)
+```
+
+# Q1: What is the GC content of “chr22” in the “hg19” build of the human genome?
+
+```{r}
+# load hg19 build dataset
+library(BSgenome.Hsapiens.UCSC.hg19)
+Hsapiens
+# count total bases on chr22
+totalBase <- letterFrequency(Hsapiens$chr22, "A") +
+             letterFrequency(Hsapiens$chr22, "C") +
+             letterFrequency(Hsapiens$chr22, "G") +
+             letterFrequency(Hsapiens$chr22, "T")
+# count GC bases on chr22  
+gcBase <- letterFrequency(Hsapiens$chr22, "GC")
+#calculate GC ratio on chr22
+gcContent <- gcBase/totalBase
+gcContent
+```
+
+# Q2:What is mean GC content of H3K27me3 “narrowPeak” regions from Epigenomics Roadmap from the H1 stem cell line on chr 22.
+
+```{r}
+# find H3K27me3 dataset
+ah <- AnnotationHub()
+H3K27me3_qh <- query(ah, c("H3K27me3", "E003", "narrowPeak"))
+H3K27me3_qh
+# retrieve data
+H3K27me3_data <- H3K27me3_qh[["AH29892"]]
+# get genomic ranges on chr22
+H3K27me3_data.chr22 <- subset(H3K27me3_data, seqnames == "chr22")
+# get DNA seqence on chr22
+H3K27me3_data.chr22.seq <- Views(Hsapiens, H3K27me3_data.chr22)
+# calculate GC content on chr22
+gcContents <- letterFrequency(H3K27me3_data.chr22.seq, "GC", as.prob = T)
+meanGcContents <- mean(gcContents)
+meanGcContents
+```
+
+# Q3: What is the correlation between GC content and “signalValue” of these regions (on chr22)?
+
+```{r}
+# values of signalValues
+sigV <- mcols(H3K27me3_data.chr22.seq)$signalValue
+# calculate correlation
+cor(sigV, gcContents)
+```
+
+# Q4: what is the correlation between the “signalValue” of the “narrowPeak” regions and the average “fc.signal” across the same regions?
+
+```{r}
+# find fc.signal file
+H3K27me3_fc <- query(ah, c("H3K27me3", "E003", "fc.signal"))
+H3K27me3_fc
+# retrieve data
+H3K27me3_fc.data <- H3K27me3_fc[["AH32033"]]
+# get subset data on chr22
+gr.chr22 <- GRanges(seqnames = "chr22", ranges = IRanges(start =1, end = 51304566))
+H3K27me3_fc.rel <- import(H3K27me3_fc.data, which =gr.chr22, as = "Rle")
+H3K27me3_fc.rel.chr22 <- H3K27me3_fc.rel$chr22
+# view fc.signal data
+fc.signal.chr22 <- Views(H3K27me3_fc.rel.chr22, start = start(H3K27me3_data.chr22), end = end(H3K27me3_data.chr22))
+# calculate mean values
+fc.signal.mean <- mean(fc.signal.chr22)
+# calculate correlation
+cor(fc.signal.mean, sigV)
+```
+
+# Q5: Question: How many bases on chr22 have an fc.signal greater than or equal to 1?
+
+```{r}
+sum(H3K27me3_fc.rel.chr22 >= 1)
+```
+
+# Q6: Identify the regions of the genome where the signal in E003 is 0.5 or lower and the signal in E055 is 2 or higher.
+
+```{r}
+H3K27me3_fc_E055 <- query(ah, c("H3K27me3", "E055"))
+H3K27me3_fc_E055_data <- H3K27me3_fc_E055[[4]]
+# get subset data on chr22
+gr.chr22 <- GRanges(seqnames = "chr22", ranges = IRanges(start =1, end = 51304566))
+H3K27me3_fc.rel_E055 <- import(H3K27me3_fc_E055_data, which =gr.chr22, as = "Rle")
+H3K27me3_fc.rel_E055.chr22 <- H3K27me3_fc.rel_E055$chr22
+# identify region
+region_E003 <- slice(H3K27me3_fc.rel.chr22, upper = 0.5)
+region_E055 <- slice(H3K27me3_fc.rel_E055.chr22, lower = 2)
+region_E003 <- as(region_E003, "IRanges")
+region_E055 <- as(region_E055, "IRanges")
+inter_region <- intersect(region_E003, region_E055)
+sum(width(inter_region))
+```
+
+# Q7: What is the average observed-to-expected ratio of CpG dinucleotides for CpG Islands on chromosome 22?
+
+```{r}
+# load hg19 CpG dataset
+CpGIsland <- query(ah, c("hg19", "CpG Islands"))
+CpGIsland_data <- CpGIsland[["AH5086"]]
+# get data on chr22
+CpGIsland_data.chr22 <- subset(CpGIsland_data, seqnames == "chr22")
+CpGIsland_data.chr22.vi <- Views(Hsapiens, CpGIsland_data.chr22)
+# calculate observed GC bases
+region_length <- width(CpGIsland_data.chr22.vi)
+observed_gcBase <- dinucleotideFrequency(CpGIsland_data.chr22.vi)[,7]/region_length
+# calculate expected GC bases
+freq_C <- letterFrequency(CpGIsland_data.chr22.vi, "C")
+freq_G <- letterFrequency(CpGIsland_data.chr22.vi, "G")
+expected_gcBase <- (freq_C/region_length)*(freq_G/region_length)
+# calculate ration
+mean(observed_gcBase/expected_gcBase)
+```
+
+# Q8: How many TATA boxes are there on chr 22 of build hg19 of the human genome?
+
+```{r}
+# load hg19 build dataset
+library(BSgenome.Hsapiens.UCSC.hg19)
+TATA_boxes <- countPattern("TATAAA", Hsapiens$chr22) + countPattern("TATAAA", reverseComplement(Hsapiens$chr22))
+TATA_boxes
+```
+
+#Q9: How many promoters of transcripts on chromosome 22 containing a coding sequence, contains a TATA box on the same strand as the transcript?
+
+```{r}
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+gr <- GRanges(seqnames = "chr22", ranges = IRanges(start = 1, end = 52330658))
+gr.trans.chr22 <- subsetByOverlaps(transcripts(txdb), gr, ignore.strand = TRUE)
+proms <- promoters(gr.trans.chr22, upstream = 900, downstream = 100)
+cdseq <- subsetByOverlaps(genes(txdb), gr, ignore.strand = TRUE)
+proms_cds <- findOverlaps(proms, cdseq)
+unique(queryHits(proms_cds))
+count = 0
+for (i in unique(queryHits(proms_cds))){
+  proms_cds_vi <- Views(Hsapiens, proms[i])
+  count = count + vcountPattern("TATAAA", DNAStringSet(proms_cds_vi))
+}
+count
+```
+
+# Q10: How many bases on chr22 are part of more than one promoter of a coding sequence?
+```{r}
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+seqlevels(txdb, force=TRUE) <- c("chr22")
+gr <- GRanges(seqnames = "chr22", ranges = IRanges(start = 1, end = 52330658))
+gr.trans.chr22 <- subsetByOverlaps(transcripts(txdb), gr, ignore.strand = TRUE)
+length(gr.trans.chr22) 
+gr.prom <- promoters(gr.trans.chr22, upstream = 900, downstream = 100)
+tl.chr22 <- transcriptLengths(txdb, with.cds_len = TRUE) #rtn df
+tl.chr22  <- tl.chr22[tl.chr22$cds_len > 0,]
+trans.eval <- gr.prom[mcols(gr.prom)$tx_id %in% tl.chr22$tx_id]
+sum(coverage(trans.eval) > 1)
+```

@@ -1,0 +1,112 @@
+---
+title: "Bioconductor_project1"
+author: "ZX"
+date: "November 5, 2015"
+output: html_document
+---
+# load library
+```{r load library}
+suppressMessages(library(AnnotationHub))
+suppressMessages(library(GenomicRanges))
+suppressMessages(library(rtracklayer))
+```
+
+# Q1 and Q2: exam data on "CpG Islands" in the human genome (hg19).
+```{r count CpG Islands}
+ah <- AnnotationHub()
+ah_human_CpG <- query(ah, c("CpG Islands", "hg19"))
+ah_human_CpG
+ah_human_CpG_data <- ah_human_CpG[["AH5086"]]
+ah_human_CpG_data
+# summary info about CpG island dataset
+summary(width(ah_human_CpG_data))
+seqinfo(ah_human_CpG_data)
+seqlevels(ah_human_CpG_data)
+gaps(ah_human_CpG_data)
+# reduce data
+ah_human_CpG_reduce <- reduce(ah_human_CpG_data)
+ah_human_CpG_reduce
+# count number of CpG islands in autochromosome
+autosome <- c(paste("chr", 1:22, sep=""))
+split_data_by_chr <- split(ah_human_CpG_reduce, seqnames(ah_human_CpG_reduce))
+autosome_CpG_data <- split_data_by_chr[autosome]
+seqlevels(autosome_CpG_data)
+# CpG Islands on autosome
+unlist(autosome_CpG_data)
+# CpG Islands on chr4
+autosome_CpG_data[4]
+```
+
+# Q3: H3K4me3 histone modification for the H1 cell line
+```{r}
+ah_H3K4me <- query(ah, c("H3K4me3", "E003"))
+ah_H3K4me_data <- ah_H3K4me[["AH29884"]]
+seqinfo(ah_H3K4me_data)
+seqlevels(ah_H3K4me_data)
+#subset autosome data
+ah_H3K4me_autosome_data <- subset(ah_H3K4me_data, seqnames %in% autosome)
+# count base pairs
+sum(width(unlist(ah_H3K4me_autosome_data)))
+```
+
+# Q4 and Q5: H3K27me3 histone modification for the H1 cell line from Epigenomics Roadmap
+```{r}
+# find H3K27me3 histone modification dataset for the H1 cell line from Epigenomics Roadmap
+ah_H3K27me3 <- query(ah, c("H3K27me3", "narrowPeak", "E003"))
+ah_H3K27me3
+# retrieve data
+ah_H3K27me3_data <- ah_H3K27me3[["AH29892"]]
+summary(width(ah_H3K27me3_data))
+seqlevels(ah_H3K27me3_data)
+seqinfo(ah_H3K27me3_data)
+# subset standard chrosome data
+ah_H3K27me3_autosome_data <- subset(ah_H3K27me3_data, seqnames %in% autosome)
+# calculate mean signalValue
+ah_H3K27me3_autosome_data_mean <- mean(ah_H3K27me3_autosome_data$signalValue)
+ah_H3K27me3_autosome_data_mean
+```
+
+# Q6: Bivalent regions are bound by both H3K4me3 and H3K27me3
+```{r}
+bivalent_data <- intersect(unlist(ah_H3K4me_autosome_data), unlist(ah_H3K27me3_autosome_data))
+sum(width(reduce(bivalent_data)))
+```
+
+# Q7 and Q8: which bivalent regions overlap CpG Islands
+```{r}
+# how big a fraction (expressed as a number between 0 and 1) of the bivalent regions, overlap one or more CpG Islands?
+CpG_bivalent_data <- findOverlaps(bivalent_data, unlist(autosome_CpG_data))
+fraction_bi <- length(unique(queryHits(CpG_bivalent_data)))/length(bivalent_data)
+fraction_bi
+# How big a fraction (expressed as a number between 0 and 1) of the bases which are part of CpG Islands, are also bivalent marked.
+ov_CpG_bivalent <- intersect(bivalent_data, unlist(autosome_CpG_data))
+fraction_CpG <- sum(width(reduce(ov_CpG_bivalent)))/sum(width(unlist(autosome_CpG_data)))
+fraction_CpG
+# How many bases are bivalently marked within 10kb of CpG Islands?
+autosome_CpG_data
+CpG_10k <- resize(unlist(autosome_CpG_data), width = 20000 + width(unlist(autosome_CpG_data)), fix = "center")
+CpG_10k_bivalent <- intersect(CpG_10k, bivalent_data)
+sum(width(CpG_10k_bivalent))
+```
+
+# Q9 and Q10: fraction of CpG and odd ratio
+```{r}
+# calculate genome size
+genome <- ah[["AH5018"]]
+genome <- keepSeqlevels(genome, c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22"))
+genome_size <- sum(as.numeric(seqlengths(genome)))
+# How big a fraction (expressed as a number between 0 and 1) of the human genome is contained in a CpG Island?
+sum(as.numeric(width(unlist(autosome_CpG_data))))/genome_size
+# odd ration
+inOut = matrix(0, ncol = 2, nrow = 2)
+colnames(inOut) = c("in", "out")
+rownames(inOut) = c("in", "out")
+inOut
+inOut[1,1] = sum(width(intersect(bivalent_data, unlist(autosome_CpG_data), ignore.strand=TRUE)))
+inOut[1,2] = sum(width(setdiff(bivalent_data, unlist(autosome_CpG_data), ignore.strand=TRUE)))
+inOut[2,1] = sum(width(setdiff(unlist(autosome_CpG_data), bivalent_data, ignore.strand=TRUE)))
+inOut[2,2] = genome_size - sum(inOut)
+inOut
+odd_ratio <- inOut[1,1]*inOut[2,2]/(inOut[1,2]*inOut[2,1])
+odd_ratio
+```
