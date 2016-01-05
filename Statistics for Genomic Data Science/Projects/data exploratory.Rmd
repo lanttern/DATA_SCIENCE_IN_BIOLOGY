@@ -1,0 +1,125 @@
+---
+title: "Statistics for Genomic Data Science_module1"
+author: "ZX"
+date: "December 10, 2015"
+output: html_document
+---
+
+#Q2:
+```{r setup, eval=TRUE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+```{r }
+x = rnorm(10)
+plot(x,pch=19,col="dodgerblue")
+```
+
+```{r }
+y = rbinom(20,size=1,prob=0.5)
+table(y)
+```
+
+#Q3:Look up the help files for summarizedExperiment with the code ?summarizedExperiment. How do you access the genomic data for this object? How do you access the phenotype table? How do you access the feature data? What is the unique additional information provided by rowRanges(se)?
+```{r}
+library(Biobase)
+library(GenomicRanges)
+library(SummarizedExperiment)
+data(sample.ExpressionSet, package = "Biobase")
+se = makeSummarizedExperimentFromExpressionSet(sample.ExpressionSet)
+metadata(se)
+rowRanges(se)
+?assay
+assay(se)
+?SummarizedExperiment
+```
+
+#Q5:Just considering the phenotype data what are some reasons that the Bottomly data set is likely a better experimental design than the Bodymap data?
+```{r}
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bottomly_eset.RData")
+load(file=con)
+close(con)
+bot = bottomly.eset
+pdata_bot=pData(bot)
+
+#Q7:Which of the following code chunks will make a heatmap of the 500 most highly expressed genes (as defined by total count), without re-ordering due to clustering? Are the highly expressed samples next to each other in sample order?
+edata = exprs(bm)
+row_sums = rowSums(edata)
+index = which(rank(-row_sums) < 500 )
+?heatmap
+edata[index,]
+heatmap(edata[index,],Rowv=NA, col = c("blue", "white", "red"))
+
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bodymap_eset.RData")
+load(file=con)
+close(con)
+bm = bodymap.eset
+pdata_bm=pData(bm)
+
+#Q8:Make an MA-plot of the first sample versus the second sample using the log2 transform (hint: you may have to add 1 first) and the rlog transform from the DESeq2 package. How are the two MA-plots different? Which kind of genes appear most different in each plot?
+edata = exprs(bm)
+y = log2(edata[,1] + 1) - log2(edata[,2] + 1)
+x = log2(edata[,1] + 1) + log2(edata[,2] + 1)
+plot(x, y, col = "blue", type = "p")
+
+source("https://bioconductor.org/biocLite.R")
+biocLite("DESeq2")
+library("Rcpp")
+library("DESeq2")
+
+```
+
+
+#Q9: How do the methods compare in terms of how well they cluster the data by study? Why do you think that is?
+```{r}
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
+load(file=con)
+close(con)
+mp = montpick.eset
+pdata=pData(mp)
+edata=as.data.frame(exprs(mp))
+fdata = fData(mp)
+
+#With no changes to the data
+dist1 = dist(t(edata))
+hclust1 = hclust(dist1)
+plot(hclust1, hang = -1)
+#After filtering all genes with rowMeans less than 100
+low_genes = rowMeans(edata) < 100
+table(low_genes)
+filter_edata = filter(edata, !low_genes)
+f_dist1 = dist(t(filter_edata))
+f_hclust1 = hclust(f_dist1)
+plot(f_hclust1, hang = -1)
+#After taking the log2 transform of the data without filtering
+log_edata = log2(edata + 1)
+l_dist1 = dist(t(log_edata))
+l_hclust1 = hclust(l_dist1)
+plot(l_hclust1, hang = -1)
+```
+
+#Q10: If you choose two clusters, do you get the same two clusters as you get if you use the cutree function to cluster the samples into two groups? Which cluster matches most closely to the study labels?
+```{r}
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
+load(file=con)
+close(con)
+mp = montpick.eset
+pdata=pData(mp)
+edata=as.data.frame(exprs(mp))
+fdata = fData(mp)
+edata = log2(edata + 1)
+set.seed(1235)
+kmeans1 = kmeans(edata, centers = 2)
+matplot(t(kmeans1$centers), col = 1:2, type = "l", lwd = 2)
+
+#cuttree
+dist1 = dist(t(edata))
+hclust1 = hclust(dist1)
+hc = cutree(hclust1, k = 1:2)
+plot(hc)
+```
+
+#Session information
+```{r}
+devtools::session_info()
+```

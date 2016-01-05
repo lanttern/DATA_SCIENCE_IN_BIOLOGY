@@ -1,0 +1,174 @@
+---
+title: "module2"
+author: "ZX"
+date: "December 16, 2015"
+output: html_document
+---
+
+#Q1: What percentage of variation is explained by the 1st principal component in the data set if you:
+#a. Do no transformations?
+#b. log2(data + 1) transform?
+#c. log2(data + 1) transform and subtract row means?
+```{r}
+#load library
+library(devtools)
+library(Biobase)
+#load data
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
+load(file=con)
+close(con)
+mp = montpick.eset
+pdata=pData(mp)
+edata=as.data.frame(exprs(mp))
+fdata = fData(mp)
+head(pdata)
+head(edata)
+head(fdata)
+#calculate signatular
+svd1 = svd(edata)
+names(svd1)
+svd1$d[1]^2/sum(svd1$d^2)
+plot(svd1$d)
+plot(svd1$d^2/sum(svd1$d^2))
+#transform data
+edata_log = log2(edata+1)
+svd1 = svd(edata_log)
+svd1$d[1]^2/sum(svd1$d^2)
+plot(svd1$d)
+plot(svd1$d^2/sum(svd1$d^2))
+#transform and substract row mean
+edata_centered = edata_log - rowMeans(edata_log)
+svd1 = svd(edata_centered)
+svd1$d[1]^2/sum(svd1$d^2)
+plot(svd1$d)
+plot(svd1$d^2/sum(svd1$d^2))
+```
+
+#Q2:What is the correlation between the first singular vector and the sample clustering indicator?
+```{r}
+#load data
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
+load(file=con)
+close(con)
+mp = montpick.eset
+pdata=pData(mp)
+edata=as.data.frame(exprs(mp))
+fdata = fData(mp)
+
+#data transform
+edata = log2(edata + 1)
+edata_centered = edata - rowMeans(edata)
+#kmeans cluster
+set.seed(333)
+kmeans1 = kmeans(edata_centered, centers = 2)
+names(kmeans1)
+#singular vector
+svd1 = svd(edata_centered)
+names(svd1)
+length(svd1$u[,1])
+length(kmeans1$cluster)
+plot(kmeans1$cluster,svd1$u[,1])
+cor(kmeans1$cluster, svd1$u[,1]) #the result does not match the correct option
+```
+
+#Q3:Plot the data for this gene versus the covariate. Can you think of why this model might not fit well?
+
+```{r}
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bodymap_eset.RData")
+load(file=con)
+close(con)
+bm = bodymap.eset
+edata = exprs(bm)
+pdata_bm=pData(bm)
+edata[1,]
+head(pdata_bm)
+#fit linear model
+lm1 = lm(edata[1,] ~ as.factor(pdata_bm$num.tech.reps))
+#plot 
+par(mfrow=c(1,2))
+plot(edata[1,], pdata_bm$num.tech.reps, col= "blue", pch = 19)
+plot(edata[1,], lm1$fitted.values, col= "red", pch = 19)
+```
+
+#Q4:Fit a linear model relating he first gene’s counts to the age of the person and the sex of the samples. What is the value and interpretation of the coefficient for age?
+```{r}
+#load data
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bodymap_eset.RData")
+load(file=con)
+close(con)
+bm = bodymap.eset
+edata = exprs(bm)
+pdata_bm=pData(bm)
+head(pdata_bm)
+#fit linear model to age and sex
+lm1 = lm(edata[1,] ~ pdata_bm$age + pdata_bm$gender)
+#get coefficients
+lm1$coefficients
+```
+
+#Q5:What is the dimension of the residual matrix, the effects matrix and the coefficients matrix?
+```{r}
+#load data
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
+load(file=con)
+close(con)
+mp = montpick.eset
+pdata=pData(mp)
+edata=as.data.frame(exprs(mp))
+fdata = fData(mp)
+head(pdata)
+#transform data
+edata = log2(edata + 1)
+#fit model for all data
+mod = model.matrix(~pdata$population)
+fit = lm.fit(mod, t(edata))
+names(fit)
+head(fit$coefficients)
+#check dimensions of coefficients, residuals and effects
+dim(fit$coefficients)
+dim(fit$residuals)
+dim(fit$effects)
+```
+
+#Q6:Do this using the lm.fit function (hint: don't forget the intercept). What is the effects matrix?
+```{r}
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
+load(file=con)
+close(con)
+mp = montpick.eset
+pdata=pData(mp)
+edata=as.data.frame(exprs(mp))
+fdata = fData(mp)
+#transform data
+edata = log2(edata + 1)
+#fit model for all data
+mod = model.matrix(~pdata$population)
+fit = lm.fit(mod, t(edata))
+#effects matrix
+names(fit)
+fit$effects[1,]
+```
+
+#Q7:What is the coefficient for age for the 1,000th gene? Make a plot of the data and fitted values for this gene. Does the model fit well?
+```{r}
+#load data
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bodymap_eset.RData")
+load(file=con)
+close(con)
+bm = bodymap.eset
+edata = exprs(bm)
+pdata_bm=pData(bm)
+edata = as.data.frame(edata)
+drops = c("ERS025084","ERS025087", "ERS025093")
+edata = edata[, !names(edata) %in% drops]
+#fit limma model
+library(limma)
+mod = model.matrix(~pdata_bm$age)
+fit_limma = lmFit(edata, mod)
+names(fit_limma)
+#coefficient of 1000th gene
+fit_limma$coefficients[1000,]
+
+mod = model.matrix(~pdata_bm$age + pdata_bm$tissue.type)
+fit = lmFit(edata, mod)
+```
