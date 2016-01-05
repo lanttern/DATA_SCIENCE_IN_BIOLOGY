@@ -5,10 +5,10 @@ date: "December 16, 2015"
 output: html_document
 ---
 
-#Q1: What percentage of variation is explained by the 1st principal component in the data set if you:
-#a. Do no transformations?
-#b. log2(data + 1) transform?
-#c. log2(data + 1) transform and subtract row means?
+####Q1: What percentage of variation is explained by the 1st principal component in the data set if you:
+####a. Do no transformations?
+####b. log2(data + 1) transform?
+####c. log2(data + 1) transform and subtract row means?
 ```{r}
 #load library
 library(devtools)
@@ -44,7 +44,7 @@ plot(svd1$d)
 plot(svd1$d^2/sum(svd1$d^2))
 ```
 
-#Q2:What is the correlation between the first singular vector and the sample clustering indicator?
+####Q2:What is the correlation between the first singular vector and the sample clustering indicator?
 ```{r}
 #load data
 con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
@@ -71,7 +71,7 @@ plot(kmeans1$cluster,svd1$u[,1])
 cor(kmeans1$cluster, svd1$u[,1]) #the result does not match the correct option
 ```
 
-#Q3:Plot the data for this gene versus the covariate. Can you think of why this model might not fit well?
+####Q3:Plot the data for this gene versus the covariate. Can you think of why this model might not fit well?
 
 ```{r}
 con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bodymap_eset.RData")
@@ -90,7 +90,7 @@ plot(edata[1,], pdata_bm$num.tech.reps, col= "blue", pch = 19)
 plot(edata[1,], lm1$fitted.values, col= "red", pch = 19)
 ```
 
-#Q4:Fit a linear model relating he first gene’s counts to the age of the person and the sex of the samples. What is the value and interpretation of the coefficient for age?
+####Q4:Fit a linear model relating he first gene’s counts to the age of the person and the sex of the samples. What is the value and interpretation of the coefficient for age?
 ```{r}
 #load data
 con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bodymap_eset.RData")
@@ -106,7 +106,7 @@ lm1 = lm(edata[1,] ~ pdata_bm$age + pdata_bm$gender)
 lm1$coefficients
 ```
 
-#Q5:What is the dimension of the residual matrix, the effects matrix and the coefficients matrix?
+####Q5:What is the dimension of the residual matrix, the effects matrix and the coefficients matrix?
 ```{r}
 #load data
 con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
@@ -130,7 +130,7 @@ dim(fit$residuals)
 dim(fit$effects)
 ```
 
-#Q6:Do this using the lm.fit function (hint: don't forget the intercept). What is the effects matrix?
+####Q6:Do this using the lm.fit function (hint: don't forget the intercept). What is the effects matrix?
 ```{r}
 con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
 load(file=con)
@@ -149,7 +149,7 @@ names(fit)
 fit$effects[1,]
 ```
 
-#Q7:What is the coefficient for age for the 1,000th gene? Make a plot of the data and fitted values for this gene. Does the model fit well?
+####Q7:What is the coefficient for age for the 1,000th gene? Make a plot of the data and fitted values for this gene. Does the model fit well?
 ```{r}
 #load data
 con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bodymap_eset.RData")
