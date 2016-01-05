@@ -24,3 +24,7 @@ Python is used to implement key algorithms and data structures to analyze real g
 #### 5. [R and Bioconductor] (https://github.com/lanttern/DATA_SCIENCE_IN_BIOLOGY/tree/master/Bioconductor%20for%20Genomic%20Analysis%20)
 
 Use tools from the Bioconductor project and R program language to analyze genomic data.
+
+#### 6. [Statistics with R for Genomic Data] (https://github.com/lanttern/DATA_SCIENCE_IN_BIOLOGY/tree/master/Statistics%20for%20Genomic%20Data%20Science)
+
+An introduction to the statistics for analysis of genomic data.
